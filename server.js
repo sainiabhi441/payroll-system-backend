@@ -13,7 +13,10 @@ connectDB();
 // Middleware
 app.use(express.json());
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173'
+  origin: [
+    'http://localhost:5173',
+    'https://payroll-system-32zw.onrender.com'
+  ]
 }));
 
 // Routes
