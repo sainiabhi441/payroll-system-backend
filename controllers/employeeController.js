@@ -1,18 +1,18 @@
-// controllers/employeeController.js
-
 const Employee = require("../models/Employee");
-const { calcSalary } = require("../utils/salaryCalc");
+const { calcGross } = require("../utils/salaryCalc");
 
 // Generate unique 4-digit ID
 async function generate4DigitId() {
   while (true) {
-    const id = Math.floor(1000 + Math.random() * 9000); // 1000-9999
+    const id = Math.floor(1000 + Math.random() * 9000);
     const exists = await Employee.findOne({ empId: id });
-    if (!exists) return id; // unique ID found
+    if (!exists) return id;
   }
 }
 
-// -------------------- GET ALL EMPLOYEES --------------------
+/* =========================
+   GET ALL EMPLOYEES
+========================= */
 exports.getAllEmployees = async (req, res) => {
   try {
     const list = await Employee.find().sort({ createdAt: -1 });
@@ -22,19 +22,27 @@ exports.getAllEmployees = async (req, res) => {
   }
 };
 
-// -------------------- ADD NEW EMPLOYEE --------------------
+/* =========================
+   ADD NEW EMPLOYEE
+========================= */
 exports.addEmployee = async (req, res) => {
   try {
-    const { name, department, designation, basic } = req.body;
+    const {
+      name,
+      department,
+      designation,
+      basic,
+      workingDays = 26,
+      presentDays = 26,
+    } = req.body;
 
     if (!name || !department || !designation || basic == null) {
       return res.status(400).json({ message: "Missing fields" });
     }
 
-    // Calculate salary fields
-    const salary = calcSalary(basic, designation);
+    // Salary calculation (same as frontend)
+    const salary = calcGross(basic, designation);
 
-    // Generate unique empId
     const empId = await generate4DigitId();
 
     const employee = new Employee({
@@ -47,31 +55,42 @@ exports.addEmployee = async (req, res) => {
       da: salary.da,
       pf: salary.pf,
       gross: salary.gross,
+
+      // ✅ ATTENDANCE SAVE
+      workingDays: Number(workingDays),
+      presentDays: Number(presentDays),
     });
 
     await employee.save();
-
     res.status(201).json(employee);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Error creating employee" });
   }
 };
 
-// -------------------- UPDATE EMPLOYEE --------------------
+/* =========================
+   UPDATE EMPLOYEE
+========================= */
 exports.updateEmployee = async (req, res) => {
   try {
     const empId = req.params.id;
-    const { name, department, designation, basic } = req.body;
+
+    const {
+      name,
+      department,
+      designation,
+      basic,
+      workingDays = 26,
+      presentDays = 26,
+    } = req.body;
 
     const emp = await Employee.findOne({ empId });
-
     if (!emp) {
       return res.status(404).json({ message: "Employee not found" });
     }
 
-    // Recalculate salary
-    const salary = calcSalary(basic, designation);
+    const salary = calcGross(basic, designation);
 
     emp.name = name;
     emp.department = department;
@@ -82,19 +101,23 @@ exports.updateEmployee = async (req, res) => {
     emp.pf = salary.pf;
     emp.gross = salary.gross;
 
-    await emp.save();
+    // ✅ ATTENDANCE UPDATE
+    emp.workingDays = Number(workingDays);
+    emp.presentDays = Number(presentDays);
 
+    await emp.save();
     res.json(emp);
   } catch (err) {
     res.status(500).json({ message: "Error updating employee" });
   }
 };
 
-// -------------------- DELETE EMPLOYEE --------------------
+/* =========================
+   DELETE EMPLOYEE
+========================= */
 exports.deleteEmployee = async (req, res) => {
   try {
     const empId = req.params.id;
-
     const deleted = await Employee.findOneAndDelete({ empId });
 
     if (!deleted) {
@@ -107,7 +130,9 @@ exports.deleteEmployee = async (req, res) => {
   }
 };
 
-// -------------------- AVERAGES PER DEPARTMENT --------------------
+/* =========================
+   AVERAGES PER DEPARTMENT
+========================= */
 exports.getAverages = async (req, res) => {
   try {
     const data = await Employee.aggregate([
