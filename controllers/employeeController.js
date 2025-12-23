@@ -23,7 +23,7 @@ exports.getAllEmployees = async (req, res) => {
 };
 
 /* =========================
-   ADD NEW EMPLOYEE
+   ADD NEW EMPLOYEE ✅ FIXED
 ========================= */
 exports.addEmployee = async (req, res) => {
   try {
@@ -31,18 +31,16 @@ exports.addEmployee = async (req, res) => {
       name,
       department,
       designation,
-      basic,
+      basicSalary,
       workingDays = 26,
       presentDays = 26,
     } = req.body;
 
-    if (!name || !department || !designation || basic == null) {
+    if (!name || !department || !designation || basicSalary == null) {
       return res.status(400).json({ message: "Missing fields" });
     }
 
-    // Salary calculation (same as frontend)
-    const salary = calcGross(basic, designation);
-
+    const salary = calcGross(Number(basicSalary), designation);
     const empId = await generate4DigitId();
 
     const employee = new Employee({
@@ -55,8 +53,6 @@ exports.addEmployee = async (req, res) => {
       da: salary.da,
       pf: salary.pf,
       gross: salary.gross,
-
-      // ✅ ATTENDANCE SAVE
       workingDays: Number(workingDays),
       presentDays: Number(presentDays),
     });
@@ -70,7 +66,7 @@ exports.addEmployee = async (req, res) => {
 };
 
 /* =========================
-   UPDATE EMPLOYEE
+   UPDATE EMPLOYEE ✅ FIXED
 ========================= */
 exports.updateEmployee = async (req, res) => {
   try {
@@ -80,7 +76,7 @@ exports.updateEmployee = async (req, res) => {
       name,
       department,
       designation,
-      basic,
+      basicSalary,
       workingDays = 26,
       presentDays = 26,
     } = req.body;
@@ -90,7 +86,7 @@ exports.updateEmployee = async (req, res) => {
       return res.status(404).json({ message: "Employee not found" });
     }
 
-    const salary = calcGross(basic, designation);
+    const salary = calcGross(Number(basicSalary), designation);
 
     emp.name = name;
     emp.department = department;
@@ -100,8 +96,6 @@ exports.updateEmployee = async (req, res) => {
     emp.da = salary.da;
     emp.pf = salary.pf;
     emp.gross = salary.gross;
-
-    // ✅ ATTENDANCE UPDATE
     emp.workingDays = Number(workingDays);
     emp.presentDays = Number(presentDays);
 
