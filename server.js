@@ -10,28 +10,27 @@ const PORT = process.env.PORT || 5000;
 // Connect to MongoDB
 connectDB();
 
-// Middleware
-app.use(express.json());
-
-// 🔥 Updated CORS to allow GitHub Pages Frontend
+// CORS (no credentials needed)
 app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "https://sainiabhi441.github.io" // 👈 GitHub Pages allowed
+      "https://sainiabhi441.github.io"
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type"],
-    credentials: true
+    allowedHeaders: ["Content-Type"]
   })
 );
+
+// Middleware
+app.use(express.json());
 
 // Routes
 app.use("/api/employees", employeesRoutes);
 
-// Redirect "/" → "/api/employees"
+// Health check
 app.get("/", (req, res) => {
-  res.redirect("/api/employees");
+  res.json({ status: "API running" });
 });
 
 // Server Start
