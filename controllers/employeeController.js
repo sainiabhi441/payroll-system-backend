@@ -23,7 +23,7 @@ exports.getAllEmployees = async (req, res) => {
 };
 
 /* =========================
-   ADD NEW EMPLOYEE ✅ FIXED
+   ADD NEW EMPLOYEE ✅ FINAL FIX
 ========================= */
 exports.addEmployee = async (req, res) => {
   try {
@@ -31,16 +31,18 @@ exports.addEmployee = async (req, res) => {
       name,
       department,
       designation,
-      basicSalary,
-      workingDays = 26,
-      presentDays = 26,
+      basic,              // ✅ basic (NOT basicSalary)
+      workingDays,
+      presentDays,
     } = req.body;
 
-    if (!name || !department || !designation || basicSalary == null) {
+    // Validation
+    if (!name || !department || !designation || basic == null) {
       return res.status(400).json({ message: "Missing fields" });
     }
 
-    const salary = calcGross(Number(basicSalary), designation);
+    // Salary calculation
+    const salary = calcGross(Number(basic), designation);
     const empId = await generate4DigitId();
 
     const employee = new Employee({
@@ -53,8 +55,12 @@ exports.addEmployee = async (req, res) => {
       da: salary.da,
       pf: salary.pf,
       gross: salary.gross,
-      workingDays: Number(workingDays),
-      presentDays: Number(presentDays),
+
+      // ✅ empty aaye to default 26 use hoga (model se)
+      workingDays:
+        workingDays === undefined ? undefined : Number(workingDays),
+      presentDays:
+        presentDays === undefined ? undefined : Number(presentDays),
     });
 
     await employee.save();
@@ -66,7 +72,7 @@ exports.addEmployee = async (req, res) => {
 };
 
 /* =========================
-   UPDATE EMPLOYEE ✅ FIXED
+   UPDATE EMPLOYEE ✅ FINAL FIX
 ========================= */
 exports.updateEmployee = async (req, res) => {
   try {
@@ -76,9 +82,9 @@ exports.updateEmployee = async (req, res) => {
       name,
       department,
       designation,
-      basicSalary,
-      workingDays = 26,
-      presentDays = 26,
+      basic,
+      workingDays,
+      presentDays,
     } = req.body;
 
     const emp = await Employee.findOne({ empId });
@@ -86,7 +92,7 @@ exports.updateEmployee = async (req, res) => {
       return res.status(404).json({ message: "Employee not found" });
     }
 
-    const salary = calcGross(Number(basicSalary), designation);
+    const salary = calcGross(Number(basic), designation);
 
     emp.name = name;
     emp.department = department;
@@ -96,8 +102,9 @@ exports.updateEmployee = async (req, res) => {
     emp.da = salary.da;
     emp.pf = salary.pf;
     emp.gross = salary.gross;
-    emp.workingDays = Number(workingDays);
-    emp.presentDays = Number(presentDays);
+
+    if (workingDays !== undefined) emp.workingDays = Number(workingDays);
+    if (presentDays !== undefined) emp.presentDays = Number(presentDays);
 
     await emp.save();
     res.json(emp);
@@ -121,27 +128,5 @@ exports.deleteEmployee = async (req, res) => {
     res.json({ message: "Employee deleted" });
   } catch (err) {
     res.status(500).json({ message: "Error deleting employee" });
-  }
-};
-
-/* =========================
-   AVERAGES PER DEPARTMENT
-========================= */
-exports.getAverages = async (req, res) => {
-  try {
-    const data = await Employee.aggregate([
-      {
-        $group: {
-          _id: "$department",
-          totalGross: { $sum: "$gross" },
-          avgGross: { $avg: "$gross" },
-          count: { $sum: 1 },
-        },
-      },
-    ]);
-
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ message: "Error calculating averages" });
   }
 };
