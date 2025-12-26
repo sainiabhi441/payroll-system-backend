@@ -50,17 +50,15 @@ const EmployeeSchema = new mongoose.Schema(
       required: true,
     },
 
-    // ✅ ATTENDANCE FIELDS (FIXED)
-    // frontend empty bhej sakta hai
-    // backend default 26 lega
+    // ✅ Attendance (frontend empty bhej sakta hai)
     workingDays: {
       type: Number,
-      default: 26,   // 👈 required हटाया
+      default: 26,
     },
 
     presentDays: {
       type: Number,
-      default: 26,   // 👈 required हटाया
+      default: 26,
     },
   },
   {
