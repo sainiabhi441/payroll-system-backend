@@ -1,21 +1,127 @@
-const express = require("express");
-const router = express.Router();
+const Employee = require("../models/Employee");
+const { calcGross } = require("../utils/salaryCalc");
 
-const {
-  getAllEmployees,
-  addEmployee,
-  updateEmployee,
-  deleteEmployee,
-  getAverages,
-} = require("../controllers/employeeController");
+// Generate unique 4-digit ID
+async function generate4DigitId() {
+  while (true) {
+    const id = Math.floor(1000 + Math.random() * 9000);
+    const exists = await Employee.findOne({ empId: id });
+    if (!exists) return id;
+  }
+}
 
-// ✅ FIRST: specific routes
-router.get("/averages", getAverages);
+/* =========================
+   GET ALL EMPLOYEES
+========================= */
+exports.getAllEmployees = async (req, res) => {
+  try {
+    const list = await Employee.find().sort({ createdAt: -1 });
+    res.json(list);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching employees" });
+  }
+};
 
-// ✅ THEN: general routes
-router.get("/", getAllEmployees);
-router.post("/", addEmployee);
-router.put("/:id", updateEmployee);
-router.delete("/:id", deleteEmployee);
+/* =========================
+   ADD EMPLOYEE
+========================= */
+exports.addEmployee = async (req, res) => {
+  try {
+    const { name, department, designation, basic, workingDays, presentDays } =
+      req.body;
 
-module.exports = router;
+    if (!name || !department || !designation || basic == null) {
+      return res.status(400).json({ message: "Missing fields" });
+    }
+
+    const salary = calcGross(Number(basic), designation);
+    const empId = await generate4DigitId();
+
+    const employee = new Employee({
+      empId,
+      name,
+      department,
+      designation,
+      basic: salary.basic,
+      hra: salary.hra,
+      da: salary.da,
+      pf: salary.pf,
+      gross: salary.gross,
+      workingDays,
+      presentDays,
+    });
+
+    await employee.save();
+    res.status(201).json(employee);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error creating employee" });
+  }
+};
+
+/* =========================
+   UPDATE EMPLOYEE
+========================= */
+exports.updateEmployee = async (req, res) => {
+  try {
+    const empId = req.params.id;
+    const { name, department, designation, basic, workingDays, presentDays } =
+      req.body;
+
+    const emp = await Employee.findOne({ empId });
+    if (!emp) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+    const salary = calcGross(Number(basic), designation);
+
+    emp.name = name;
+    emp.department = department;
+    emp.designation = designation;
+    emp.basic = salary.basic;
+    emp.hra = salary.hra;
+    emp.da = salary.da;
+    emp.pf = salary.pf;
+    emp.gross = salary.gross;
+    emp.workingDays = workingDays;
+    emp.presentDays = presentDays;
+
+    await emp.save();
+    res.json(emp);
+  } catch (err) {
+    res.status(500).json({ message: "Error updating employee" });
+  }
+};
+
+/* =========================
+   DELETE EMPLOYEE
+========================= */
+exports.deleteEmployee = async (req, res) => {
+  try {
+    const empId = req.params.id;
+    await Employee.findOneAndDelete({ empId });
+    res.json({ message: "Employee deleted" });
+  } catch (err) {
+    res.status(500).json({ message: "Error deleting employee" });
+  }
+};
+
+/* =========================
+   AVERAGES
+========================= */
+exports.getAverages = async (req, res) => {
+  try {
+    const data = await Employee.aggregate([
+      {
+        $group: {
+          _id: "$department",
+          avgGross: { $avg: "$gross" },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ message: "Error calculating averages" });
+  }
+};
