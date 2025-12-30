@@ -33,6 +33,13 @@ app.use(
 ========================= */
 app.use("/api/employees", employeesRoutes);
 
+
+// 👇 AUTO REDIRECT ROOT → API
+app.get("/", (req, res) => {
+  res.redirect("/api/employees");
+});
+
+
 // Root / Health check
 app.get("/", (req, res) => {
   res.status(200).json({
