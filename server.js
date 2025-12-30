@@ -7,33 +7,42 @@ const employeesRoutes = require("./routes/employees");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Connect to MongoDB
+/* =========================
+   DATABASE
+========================= */
 connectDB();
 
-// CORS (no credentials needed)
+/* =========================
+   MIDDLEWARE
+========================= */
+app.use(express.json());
+
 app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "https://sainiabhi441.github.io"
+      "https://sainiabhi441.github.io",
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type"]
+    allowedHeaders: ["Content-Type"],
   })
 );
 
-// Middleware
-app.use(express.json());
-
-// Routes
+/* =========================
+   ROUTES
+========================= */
 app.use("/api/employees", employeesRoutes);
 
-// Health check
+// Root / Health check
 app.get("/", (req, res) => {
-  res.json({ status: "API running" });
+  res.status(200).json({
+    message: "Payroll System API is running 🚀",
+  });
 });
 
-// Server Start
+/* =========================
+   SERVER
+========================= */
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
